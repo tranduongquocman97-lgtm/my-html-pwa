@@ -2,12 +2,12 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>HTML Reader & Runner</title>
 
   <!-- PWA & Mobile Meta -->
   <link rel="manifest" href="./manifest.json">
-  <meta name="theme-color" content="#2563eb">
+  <meta name="theme-color" content="#0f172a">
   <meta name="mobile-web-app-capable" content="yes">
   
   <!-- Hỗ trợ iOS Safari -->
@@ -22,83 +22,129 @@
       margin: 0;
       padding: 0;
     }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    
+    html, body {
+      width: 100%;
+      height: 100%;
+      height: 100dvh; /* Chiều cao thực tế trên mọi màn hình di động */
+      overflow: hidden; /* Chặn cuộn ngoài khung app */
       background-color: #0f172a;
-      color: #f8fafc;
-      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    /* Container chính chia layout đứng */
+    .app-root {
       display: flex;
       flex-direction: column;
+      width: 100%;
+      height: 100%;
     }
-    header {
+
+    /* Thanh điều khiển trên cùng */
+    header.toolbar {
       background-color: #1e293b;
-      padding: 14px 18px;
+      padding: 8px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 8px;
       border-bottom: 1px solid #334155;
+      flex-shrink: 0;
+      z-index: 10;
+      transition: all 0.25s ease;
     }
-    h1 {
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: #60a5fa;
-    }
-    .install-btn {
+
+    header.toolbar.hidden {
       display: none;
-      background: #10b981;
-      color: white;
-      border: none;
-      padding: 6px 14px;
-      border-radius: 9999px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
     }
-    .main-container {
-      flex: 1;
+
+    .btn-group {
       display: flex;
-      flex-direction: column;
-      padding: 14px;
-      gap: 12px;
-    }
-    .toolbar {
-      display: flex;
-      gap: 10px;
+      gap: 8px;
+      align-items: center;
       flex-wrap: wrap;
     }
-    .toolbar label, .toolbar button {
+
+    .btn {
       background: #2563eb;
       color: white;
-      padding: 8px 14px;
+      padding: 6px 12px;
       border-radius: 6px;
-      font-size: 0.85rem;
+      font-size: 0.825rem;
       font-weight: 600;
       cursor: pointer;
       border: none;
       display: inline-flex;
       align-items: center;
+      gap: 4px;
+      text-decoration: none;
     }
-    .toolbar input[type="file"] {
+
+    .btn:active {
+      background: #1d4ed8;
+    }
+
+    .btn-success {
+      background: #10b981;
+    }
+    .btn-success:active {
+      background: #059669;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid #475569;
+      color: #cbd5e1;
+    }
+
+    input[type="file"] {
       display: none;
     }
-    .preview-box {
+
+    /* Khung chứa iframe chiếm trọn vẹn phần còn lại */
+    .viewport-container {
       flex: 1;
-      min-height: 400px;
+      width: 100%;
+      height: 100%;
+      position: relative;
       background: #ffffff;
-      border-radius: 8px;
       overflow: hidden;
-      border: 1px solid #334155;
     }
-    iframe {
+
+    /* Iframe căng 100% tuyệt đối */
+    iframe#app-viewport {
       width: 100%;
       height: 100%;
       border: none;
+      display: block;
       background: #ffffff;
     }
+
+    /* Nút nổi bật mở lại thanh công cụ khi đã ẩn */
+    #toggle-toolbar-btn {
+      position: fixed;
+      bottom: 14px;
+      right: 14px;
+      background: rgba(30, 41, 59, 0.75);
+      backdrop-filter: blur(4px);
+      color: #94a3b8;
+      border: 1px solid #475569;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 999;
+      font-size: 16px;
+    }
+
+    /* Toast thông báo cập nhật */
     #update-toast {
       display: none;
       position: fixed;
-      bottom: 20px;
+      bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
       background-color: #1e293b;
@@ -108,95 +154,113 @@
       box-shadow: 0 10px 20px rgba(0,0,0,0.5);
       border: 1px solid #3b82f6;
       font-size: 13px;
-      z-index: 9999;
+      z-index: 1000;
       align-items: center;
       gap: 10px;
       white-space: nowrap;
-    }
-    #update-btn {
-      background-color: #2563eb;
-      color: #ffffff;
-      border: none;
-      padding: 4px 10px;
-      border-radius: 9999px;
-      font-weight: 600;
-      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>HTML Reader</h1>
-    <button id="pwa-install" class="install-btn">Cài đặt ứng dụng</button>
-  </header>
+  <div class="app-root">
+    <!-- Header điều khiển -->
+    <header class="toolbar" id="main-toolbar">
+      <div class="btn-group">
+        <label class="btn">
+          📂 Chọn file HTML
+          <input type="file" id="html-file-input" accept=".html,text/html">
+        </label>
+        <button class="btn btn-outline" id="btn-reload">🔄 Tải lại</button>
+      </div>
 
-  <div class="main-container">
-    <div class="toolbar">
-      <label>
-        Chọn file HTML từ máy
-        <input type="file" id="html-file-input" accept=".html,text/html">
-      </label>
-      <button id="btn-sample">Nạp mã mẫu</button>
-    </div>
+      <div class="btn-group">
+        <button id="pwa-install" class="btn btn-success" style="display: none;">⬇ Cài đặt App</button>
+        <button class="btn btn-outline" id="btn-hide-bar" title="Ẩn thanh này để xem toàn màn hình">Toàn màn hình ⛶</button>
+      </div>
+    </header>
 
-    <div class="preview-box">
-      <iframe id="app-viewport" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
-    </div>
+    <!-- Khu vực hiển thị file HTML nội bộ -->
+    <main class="viewport-container">
+      <iframe 
+        id="app-viewport" 
+        sandbox="allow-scripts allow-modals allow-same-origin allow-forms allow-downloads allow-popups"
+        allow="fullscreen; clipboard-read; clipboard-write">
+      </iframe>
+    </main>
   </div>
 
+  <!-- Nút tròn góc phải để bật/tắt thanh công cụ khi cần -->
+  <button id="toggle-toolbar-btn" title="Hiện/Ẩn Menu">⚙</button>
+
+  <!-- Banner thông báo cập nhật PWA -->
   <div id="update-toast">
     <span>Có phiên bản mới!</span>
-    <button id="update-btn">Cập nhật ngay</button>
+    <button class="btn btn-success" style="padding: 4px 10px; font-size: 12px;" id="update-btn">Cập nhật ngay</button>
   </div>
 
   <script>
     const fileInput = document.getElementById('html-file-input');
     const viewport = document.getElementById('app-viewport');
-    const sampleBtn = document.getElementById('btn-sample');
+    const reloadBtn = document.getElementById('btn-reload');
+    const hideBarBtn = document.getElementById('btn-hide-bar');
+    const toggleBtn = document.getElementById('toggle-toolbar-btn');
+    const toolbar = document.getElementById('main-toolbar');
     const installBtn = document.getElementById('pwa-install');
 
-    // Nạp mã HTML mẫu
-    function loadSample() {
-      const sampleCode = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            body { font-family: sans-serif; padding: 20px; text-align: center; }
-            button { background: #2563eb; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 16px; margin-top: 10px; }
-          </style>
-        </head>
-        <body>
-          <h2>Mã HTML đang chạy mượt mà!</h2>
-          <p>Trang này hoạt động độc lập và hoàn toàn ngoại tuyến.</p>
-          <button onclick="alert('JavaScript hoạt động chuẩn xác!')">Bấm thử</button>
-        </body>
-        </html>
-      `;
-      viewport.srcdoc = sampleCode;
-    }
-    sampleBtn.addEventListener('click', loadSample);
-    loadSample();
+    let currentHtmlContent = "";
 
-    // Mở file HTML từ máy
+    // 1. Lưu và nạp nội dung file HTML
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
+
       const reader = new FileReader();
       reader.onload = (event) => {
-        viewport.srcdoc = event.target.result;
+        currentHtmlContent = event.target.result;
+        // Lưu vào sessionStorage để khi reload không bị mất nội dung vừa nạp
+        try {
+          sessionStorage.setItem('last_loaded_html', currentHtmlContent);
+        } catch(err) {}
+        
+        renderHtml(currentHtmlContent);
       };
       reader.readAsText(file);
     });
 
-    // 1. Bắt sự kiện cài đặt PWA (Android / Chrome)
+    function renderHtml(content) {
+      viewport.srcdoc = content;
+    }
+
+    // Tự nạp lại dữ liệu cũ nếu trước đó người dùng đã chọn file
+    const cachedHtml = sessionStorage.getItem('last_loaded_html');
+    if (cachedHtml) {
+      currentHtmlContent = cachedHtml;
+      renderHtml(currentHtmlContent);
+    }
+
+    // Nút tải lại (Reload lại nội dung trong iframe)
+    reloadBtn.addEventListener('click', () => {
+      if (currentHtmlContent) {
+        renderHtml(currentHtmlContent);
+      } else {
+        viewport.contentWindow.location.reload();
+      }
+    });
+
+    // 2. Ẩn/Hiện thanh công cụ để lấy không gian toàn màn hình
+    function toggleToolbar() {
+      toolbar.classList.toggle('hidden');
+    }
+    hideBarBtn.addEventListener('click', toggleToolbar);
+    toggleBtn.addEventListener('click', toggleToolbar);
+
+    // 3. Xử lý sự kiện cài đặt PWA
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      installBtn.style.display = 'block';
+      installBtn.style.display = 'inline-flex';
     });
 
     installBtn.addEventListener('click', async () => {
@@ -209,7 +273,7 @@
       deferredPrompt = null;
     });
 
-    // 2. Đăng ký Service Worker
+    // 4. Quản lý Service Worker
     if ('serviceWorker' in navigator) {
       let newWorker;
       let refreshing = false;
