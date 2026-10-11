@@ -1,4 +1,4 @@
-const CACHE_NAME = 'html-reader-v2';
+const CACHE_NAME = 'html-reader-v3';
 
 const PRECACHE_ASSETS = [
   './',
