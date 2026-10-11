@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>HTML Reader & Runner</title>
+  <title>HTML Reader & Studio</title>
 
   <!-- PWA & Mobile Meta -->
   <link rel="manifest" href="./manifest.json">
@@ -13,7 +13,7 @@
   <!-- Hỗ trợ iOS Safari -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="HTMLReader">
+  <meta name="apple-mobile-web-app-title" content="HTMLStudio">
   <link rel="apple-touch-icon" href="./icon-192.png">
 
   <style>
@@ -26,13 +26,12 @@
     html, body {
       width: 100%;
       height: 100%;
-      height: 100dvh; /* Chiều cao thực tế trên mọi màn hình di động */
-      overflow: hidden; /* Chặn cuộn ngoài khung app */
+      height: 100dvh;
+      overflow: hidden;
       background-color: #0f172a;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    /* Container chính chia layout đứng */
     .app-root {
       display: flex;
       flex-direction: column;
@@ -40,7 +39,7 @@
       height: 100%;
     }
 
-    /* Thanh điều khiển trên cùng */
+    /* Thanh điều khiển */
     header.toolbar {
       background-color: #1e293b;
       padding: 8px 12px;
@@ -51,7 +50,7 @@
       border-bottom: 1px solid #334155;
       flex-shrink: 0;
       z-index: 10;
-      transition: all 0.25s ease;
+      flex-wrap: wrap;
     }
 
     header.toolbar.hidden {
@@ -60,7 +59,7 @@
 
     .btn-group {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
       flex-wrap: wrap;
     }
@@ -68,29 +67,23 @@
     .btn {
       background: #2563eb;
       color: white;
-      padding: 6px 12px;
+      padding: 6px 11px;
       border-radius: 6px;
-      font-size: 0.825rem;
+      font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
       border: none;
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      text-decoration: none;
+      user-select: none;
     }
 
-    .btn:active {
-      background: #1d4ed8;
-    }
-
-    .btn-success {
-      background: #10b981;
-    }
-    .btn-success:active {
-      background: #059669;
-    }
-
+    .btn:active { background: #1d4ed8; }
+    .btn-success { background: #10b981; }
+    .btn-success:active { background: #059669; }
+    .btn-amber { background: #d97706; }
+    .btn-amber:active { background: #b45309; }
     .btn-outline {
       background: transparent;
       border: 1px solid #475569;
@@ -101,7 +94,7 @@
       display: none;
     }
 
-    /* Khung chứa iframe chiếm trọn vẹn phần còn lại */
+    /* Khung hiển thị nội dung web */
     .viewport-container {
       flex: 1;
       width: 100%;
@@ -111,7 +104,6 @@
       overflow: hidden;
     }
 
-    /* Iframe căng 100% tuyệt đối */
     iframe#app-viewport {
       width: 100%;
       height: 100%;
@@ -120,27 +112,100 @@
       background: #ffffff;
     }
 
-    /* Nút nổi bật mở lại thanh công cụ khi đã ẩn */
+    /* Modal Trình soạn thảo / Nhập mã code */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      padding: 12px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 10px 14px;
+      background: #0f172a;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-header h3 {
+      font-size: 0.95rem;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .code-editor {
+      flex: 1;
+      width: 100%;
+      background: #090d16;
+      color: #f1f5f9;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.85rem;
+      line-height: 1.45;
+      padding: 14px;
+      border: none;
+      resize: none;
+      outline: none;
+      white-space: pre;
+    }
+
+    .modal-footer {
+      padding: 10px 14px;
+      background: #0f172a;
+      border-top: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* Nút tròn góc phải mở/đóng thanh công cụ */
     #toggle-toolbar-btn {
       position: fixed;
       bottom: 14px;
       right: 14px;
-      background: rgba(30, 41, 59, 0.75);
+      background: rgba(30, 41, 59, 0.85);
       backdrop-filter: blur(4px);
-      color: #94a3b8;
+      color: #cbd5e1;
       border: 1px solid #475569;
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      z-index: 999;
+      z-index: 99;
       font-size: 16px;
     }
 
-    /* Toast thông báo cập nhật */
+    /* Toast thông báo cập nhật PWA */
     #update-toast {
       display: none;
       position: fixed;
@@ -151,36 +216,35 @@
       color: #ffffff;
       padding: 10px 18px;
       border-radius: 9999px;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.5);
       border: 1px solid #3b82f6;
       font-size: 13px;
-      z-index: 1000;
+      z-index: 1001;
       align-items: center;
       gap: 10px;
-      white-space: nowrap;
     }
   </style>
 </head>
 <body>
 
   <div class="app-root">
-    <!-- Header điều khiển -->
+    <!-- Thanh điều khiển -->
     <header class="toolbar" id="main-toolbar">
       <div class="btn-group">
         <label class="btn">
-          📂 Chọn file HTML
+          📂 Nạp file
           <input type="file" id="html-file-input" accept=".html,text/html">
         </label>
+        <button class="btn btn-amber" id="btn-open-editor">✏️ Soạn / Dán mã</button>
         <button class="btn btn-outline" id="btn-reload">🔄 Tải lại</button>
       </div>
 
       <div class="btn-group">
-        <button id="pwa-install" class="btn btn-success" style="display: none;">⬇ Cài đặt App</button>
-        <button class="btn btn-outline" id="btn-hide-bar" title="Ẩn thanh này để xem toàn màn hình">Toàn màn hình ⛶</button>
+        <button id="pwa-install" class="btn btn-success" style="display: none;">⬇ Cài App</button>
+        <button class="btn btn-outline" id="btn-hide-bar">Toàn màn hình ⛶</button>
       </div>
     </header>
 
-    <!-- Khu vực hiển thị file HTML nội bộ -->
+    <!-- Khung hiển thị nội dung Web App -->
     <main class="viewport-container">
       <iframe 
         id="app-viewport" 
@@ -190,13 +254,41 @@
     </main>
   </div>
 
-  <!-- Nút tròn góc phải để bật/tắt thanh công cụ khi cần -->
+  <!-- Nút góc dưới mở/đóng thanh Menu -->
   <button id="toggle-toolbar-btn" title="Hiện/Ẩn Menu">⚙</button>
 
-  <!-- Banner thông báo cập nhật PWA -->
+  <!-- Cửa sổ Soạn thảo / Nhập mã HTML -->
+  <div class="modal-overlay" id="editor-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>✏️ Soạn thảo & Chạy HTML</h3>
+        <div class="btn-group">
+          <select id="template-select" style="background:#1e293b; color:#fff; border:1px solid #475569; padding:5px 8px; border-radius:6px; font-size:12px;">
+            <option value="">-- Mẫu khởi tạo nhanh --</option>
+            <option value="blank">Trang trắng cơ bản</option>
+            <option value="calculator">Ứng dụng máy tính mini</option>
+            <option value="form">Biểu mẫu nhập liệu</option>
+          </select>
+          <button class="btn btn-outline" id="btn-close-editor" style="padding:4px 8px;">✕ Đóng</button>
+        </div>
+      </div>
+
+      <textarea id="code-input" class="code-editor" placeholder="Dán mã HTML/CSS/JS của bạn vào đây hoặc chọn một mẫu từ thanh menu trên..."></textarea>
+
+      <div class="modal-footer">
+        <div class="btn-group">
+          <button class="btn btn-outline" id="btn-download-html">💾 Xuất file .html</button>
+          <button class="btn btn-outline" id="btn-clear-code">🗑 Xóa trắng</button>
+        </div>
+        <button class="btn btn-success" id="btn-run-code" style="padding:8px 18px; font-size:14px;">▶ Chạy ngay</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast cập nhật PWA -->
   <div id="update-toast">
     <span>Có phiên bản mới!</span>
-    <button class="btn btn-success" style="padding: 4px 10px; font-size: 12px;" id="update-btn">Cập nhật ngay</button>
+    <button class="btn btn-success" style="padding: 4px 10px; font-size: 12px;" id="update-btn">Cập nhật</button>
   </div>
 
   <script>
@@ -208,54 +300,193 @@
     const toolbar = document.getElementById('main-toolbar');
     const installBtn = document.getElementById('pwa-install');
 
+    // Các phần tử Editor
+    const editorModal = document.getElementById('editor-modal');
+    const openEditorBtn = document.getElementById('btn-open-editor');
+    const closeEditorBtn = document.getElementById('btn-close-editor');
+    const runCodeBtn = document.getElementById('btn-run-code');
+    const codeInput = document.getElementById('code-input');
+    const templateSelect = document.getElementById('template-select');
+    const downloadHtmlBtn = document.getElementById('btn-download-html');
+    const clearCodeBtn = document.getElementById('btn-clear-code');
+
     let currentHtmlContent = "";
 
-    // 1. Lưu và nạp nội dung file HTML
+    // Mẫu code dựng sẵn
+    const TEMPLATES = {
+      blank: `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ứng dụng mới</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 20px; line-height: 1.5; }
+    h2 { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <h2>Trang HTML mới</h2>
+  <p>Bắt đầu viết nội dung của bạn tại đây...</p>
+</body>
+</html>`,
+
+      calculator: `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Máy tính mini</title>
+  <style>
+    body { font-family: sans-serif; display: flex; justify-content: center; padding: 20px; background: #f1f5f9; }
+    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); width: 100%; max-width: 320px; }
+    input { width: 100%; padding: 10px; margin-bottom: 10px; font-size: 16px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; }
+    button { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+    .res { margin-top: 15px; font-size: 18px; font-weight: bold; text-align: center; color: #0f172a; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h3 style="text-align:center; margin-bottom:15px;">Máy tính cộng số</h3>
+    <input type="number" id="numA" placeholder="Nhập số thứ nhất">
+    <input type="number" id="numB" placeholder="Nhập số thứ hai">
+    <button onclick="calc()">Cộng hai số</button>
+    <div class="res" id="result">Kết quả: --</div>
+  </div>
+  <script>
+    function calc() {
+      const a = parseFloat(document.getElementById('numA').value) || 0;
+      const b = parseFloat(document.getElementById('numB').value) || 0;
+      document.getElementById('result').innerText = 'Kết quả: ' + (a + b);
+    }
+  <\/script>
+</body>
+</html>`,
+
+      form: `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Biểu mẫu ghi chép</title>
+  <style>
+    body { font-family: sans-serif; padding: 16px; background: #fafafa; }
+    .box { background: white; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; max-width: 480px; margin: auto; }
+    label { display: block; margin-top: 10px; font-weight: 600; font-size: 14px; }
+    input, textarea { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
+    button { margin-top: 12px; width: 100%; padding: 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h3>Ghi chú công việc</h3>
+    <label>Tiêu đề</label>
+    <input type="text" id="title" placeholder="Ví dụ: Họp chi đoàn...">
+    <label>Nội dung chi tiết</label>
+    <textarea id="detail" rows="4" placeholder="Nhập nội dung..."></textarea>
+    <button onclick="saveNote()">Lưu ghi chú</button>
+  </div>
+  <script>
+    function saveNote() {
+      const t = document.getElementById('title').value;
+      alert('Đã ghi nhận: ' + (t || 'Không tiêu đề'));
+    }
+  <\/script>
+</body>
+</html>`
+    };
+
+    function renderHtml(content) {
+      currentHtmlContent = content;
+      viewport.srcdoc = content;
+      try {
+        localStorage.setItem('saved_html_code', content);
+      } catch(e) {}
+    }
+
+    // Khởi tạo: Nạp lại mã đã lưu trước đó nếu có
+    const savedCode = localStorage.getItem('saved_html_code');
+    if (savedCode) {
+      codeInput.value = savedCode;
+      renderHtml(savedCode);
+    } else {
+      codeInput.value = TEMPLATES.blank;
+      renderHtml(TEMPLATES.blank);
+    }
+
+    // 1. Quản lý Mở / Đóng Editor
+    openEditorBtn.addEventListener('click', () => {
+      codeInput.value = currentHtmlContent || codeInput.value;
+      editorModal.classList.add('active');
+    });
+
+    closeEditorBtn.addEventListener('click', () => {
+      editorModal.classList.remove('active');
+    });
+
+    // 2. Chạy mã từ Editor
+    runCodeBtn.addEventListener('click', () => {
+      renderHtml(codeInput.value);
+      editorModal.classList.remove('active');
+    });
+
+    // 3. Chọn mẫu khởi tạo
+    templateSelect.addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (val && TEMPLATES[val]) {
+        if (codeInput.value && !confirm('Bạn có muốn ghi đè mã hiện tại bằng mẫu này không?')) {
+          templateSelect.value = "";
+          return;
+        }
+        codeInput.value = TEMPLATES[val];
+      }
+      templateSelect.value = "";
+    });
+
+    // 4. Xóa trắng
+    clearCodeBtn.addEventListener('click', () => {
+      if (confirm('Xóa sạch mã trong trình soạn thảo?')) {
+        codeInput.value = '';
+      }
+    });
+
+    // 5. Xuất file .html về máy
+    downloadHtmlBtn.addEventListener('click', () => {
+      const content = codeInput.value;
+      if (!content) return alert('Chưa có mã để xuất!');
+      const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'app_' + Date.now() + '.html';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    // 6. Nạp file từ máy
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = (event) => {
-        currentHtmlContent = event.target.result;
-        // Lưu vào sessionStorage để khi reload không bị mất nội dung vừa nạp
-        try {
-          sessionStorage.setItem('last_loaded_html', currentHtmlContent);
-        } catch(err) {}
-        
-        renderHtml(currentHtmlContent);
+        codeInput.value = event.target.result;
+        renderHtml(event.target.result);
       };
       reader.readAsText(file);
     });
 
-    function renderHtml(content) {
-      viewport.srcdoc = content;
-    }
-
-    // Tự nạp lại dữ liệu cũ nếu trước đó người dùng đã chọn file
-    const cachedHtml = sessionStorage.getItem('last_loaded_html');
-    if (cachedHtml) {
-      currentHtmlContent = cachedHtml;
-      renderHtml(currentHtmlContent);
-    }
-
-    // Nút tải lại (Reload lại nội dung trong iframe)
+    // Nút tải lại (Reload)
     reloadBtn.addEventListener('click', () => {
-      if (currentHtmlContent) {
-        renderHtml(currentHtmlContent);
-      } else {
-        viewport.contentWindow.location.reload();
-      }
+      renderHtml(currentHtmlContent);
     });
 
-    // 2. Ẩn/Hiện thanh công cụ để lấy không gian toàn màn hình
+    // Ẩn/Hiện thanh công cụ
     function toggleToolbar() {
       toolbar.classList.toggle('hidden');
     }
     hideBarBtn.addEventListener('click', toggleToolbar);
     toggleBtn.addEventListener('click', toggleToolbar);
 
-    // 3. Xử lý sự kiện cài đặt PWA
+    // Xử lý sự kiện cài đặt PWA
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
@@ -273,7 +504,7 @@
       deferredPrompt = null;
     });
 
-    // 4. Quản lý Service Worker
+    // Service Worker
     if ('serviceWorker' in navigator) {
       let newWorker;
       let refreshing = false;
