@@ -1,0 +1,19 @@
+{
+  "name": "Local HTML Runner & App",
+  "short_name": "HTMLApp",
+  "description": "Ứng dụng chạy offline các công cụ và tiện ích HTML cá nhân",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Local HTML Runner</title>
+
+  <!-- PWA & Mobile Web App Meta -->
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="mobile-web-app-capable" content="yes">
+  
+  <!-- Hỗ trợ iOS Safari Fullscreen -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HTMLApp">
+  <link rel="apple-touch-icon" href="./icon-512.png">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+    }
+    header {
+      margin-bottom: 24px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #60a5fa;
+    }
+    p.subtitle {
+      color: #94a3b8;
+      font-size: 0.875rem;
+      margin-top: 4px;
+    }
+    .card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      border: 1px solid #334155;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4ade80;
+    }
+    textarea {
+      width: 100%;
+      height: 120px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      margin-top: 12px;
+      resize: vertical;
+    }
+    button.action-btn {
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: background 0.2s;
+    }
+    button.action-btn:active {
+      background: #1d4ed8;
+    }
+
+    /* Toast thông báo bản cập nhật mới */
+    #update-toast {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #1e293b;
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: 9999px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+      border: 1px solid #3b82f6;
+      font-size: 14px;
+      z-index: 9999;
+      align-items: center;
+      gap: 12px;
+      white-space: nowrap;
+    }
+    #update-btn {
+      background-color: #2563eb;
+      color: #ffffff;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>HTML Runner PWA</h1>
+    <p class="subtitle">Chạy độc lập offline trên thiết bị di động</p>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        <span id="network-status">Đang trực tuyến (Online)</span>
+      </div>
+      <p style="margin-top: 12px; font-size: 0.9rem; line-height: 1.5; color: #cbd5e1;">
+        Ứng dụng này đã được lưu vào bộ nhớ cache. Bạn có thể tắt Wi-Fi / 4G và mở lại ứng dụng từ màn hình chính bất cứ lúc nào.
+      </p>
+    </div>
+
+    <!-- Khu vực nhập liệu & demo lưu trữ offline -->
+    <div class="card">
+      <h3 style="font-size: 1rem; color: #e2e8f0;">Thử nghiệm lưu trữ dữ liệu (localStorage)</h3>
+      <textarea id="note-input" placeholder="Nhập ghi chú hoặc dữ liệu cần lưu tại đây..."></textarea>
+      <button class="action-btn" onclick="saveData()">Lưu dữ liệu cục bộ</button>
+      <p id="save-msg" style="color: #4ade80; font-size: 0.8rem; margin-top: 8px; display: none;">Đã lưu thành công!</p>
+    </div>
+  </main>
+
+  <!-- Banner thông báo cập nhật -->
+  <div id="update-toast">
+    <span>Có phiên bản mới từ server!</span>
+    <button id="update-btn">Cập nhật ngay</button>
+  </div>
+
+  <script>
+    // 1. Quản lý lưu trữ Demo
+    const noteInput = document.getElementById('note-input');
+    noteInput.value = localStorage.getItem('saved_note') || '';
+
+    function saveData() {
+      localStorage.setItem('saved_note', noteInput.value);
+      const msg = document.getElementById('save-msg');
+      msg.style.display = 'block';
+      setTimeout(() => { msg.style.display = 'none'; }, 2000);
+    }
+
+    // 2. Theo dõi trạng thái mạng
+    function updateOnlineStatus() {
+      const statusEl = document.getElementById('network-status');
+      if (navigator.onLine) {
+        statusEl.innerText = 'Đang trực tuyến (Online)';
+        statusEl.parentElement.style.color = '#4ade80';
+      } else {
+        statusEl.innerText = 'Đang ngoại tuyến (Offline)';
+        statusEl.parentElement.style.color = '#f87171';
+      }
+    }
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+
+    // 3. Đăng ký Service Worker và cơ chế Update Toast
+    if ('serviceWorker' in navigator) {
+      let newWorker;
+      let refreshing = false;
+
+      // Reload trang tự động sau khi Service Worker mới đã active
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then((registration) => {
+          // Kiểm tra update ngầm trên máy chủ
+          registration.update();
+
+          registration.addEventListener('updatefound', () => {
+            newWorker = registration.installing;
+
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // Hiện thanh toast khi đã tải xong SW mới
+                const toast = document.getElementById('update-toast');
+                const btn = document.getElementById('update-btn');
+                toast.style.display = 'flex';
+
+                btn.addEventListener('click', () => {
+                  newWorker.postMessage({ action: 'skipWaiting' });
+                  toast.style.display = 'none';
+                });
+              }
+            });
+          });
+        });
+      });
+    }
+  </script>
+</body>
+</html>
